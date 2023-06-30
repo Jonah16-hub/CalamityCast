@@ -8,13 +8,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import geopy
 from geopy.geocoders import Nominatim
+import plotly.express as px
+import re
 
-# Configuration de l'interface de Streamlit
+#################################################
+#   Configuration de l'interface de Streamlit   #
+#################################################
 st.set_page_config(page_title='CalamityCast', 
                    page_icon='CalamityCastLogo-02.png', 
                    layout='wide', 
                    initial_sidebar_state='expanded')
 
+#################################################
+#                DATA PREPROCESSING             #
+#################################################
 # Load the dataset into a Pandas DataFrame
 data = pd.read_excel('emdat_public_2023_05_02_query_uid-umjMCi.xlsx')
 
@@ -47,13 +54,15 @@ def complete_coordinates(dataset):
 selected = select_columns(data)
 processed_data = complete_coordinates(selected)
 
-import re
 # Remove non-numerical characters from Latitude column
 processed_data['Latitude'] = processed_data['Latitude'].apply(lambda x: re.sub(r'[^0-9.-]', '', str(x)))
 # Remove non-numerical characters from Longitude column
 processed_data['Longitude'] = processed_data['Longitude'].apply(lambda x: re.sub(r'[^0-9.-]', '', str(x)))
 
-#Starting dataviz
+
+#################################################
+#                 Starting dataviz              #
+#################################################
 # Group the data by year and count the number of occurrences
 disasters_by_year = processed_data.groupby('Year').size()
 
@@ -70,8 +79,6 @@ plt.title('Number of Disasters by Year')
 plt.show()
 # Save plot 
 number_year = plt.gcf()
-
-import plotly.express as px
 
 # Group the data by year and disaster type and count the number of occurrences
 disasters_by_year_type = data.groupby(['Year', 'Disaster Type']).size().unstack().reset_index()
@@ -90,7 +97,7 @@ fig.update_layout(
 )
 
 # Show the chart
-fig.show()
+#fig.show()
 
 # Fonction pour créer une carte avec Folium
 def create_map():
@@ -104,12 +111,21 @@ def create_bar_chart(data):
     ax.bar(data.index, data.values)
     return fig
 
-# Les données pour les graphiques
-# Remplacez par vos vraies données
-data1 = pd.Series(np.random.rand(10), index=list('ABCDEFGHIJ'))
-data2 = pd.Series(np.random.rand(10), index=list('ABCDEFGHIJ'))
+##World map graph##
+# Create a world map plot using Plotly Express
+figwm = px.scatter_geo(processed_data, lat='Latitude', lon='Longitude', color='Disaster Type',
+                     hover_name='Disaster Type', projection='natural earth')
 
-# Création de la page Streamlit
+# Customize the chart appearance
+figwm.update_layout(
+    title='Natural Disasters Worldwide',
+    geo=dict(showcountries=True)
+)
+
+
+#################################################
+#          Création de la page Streamlit        #
+#################################################
 
 # Affichez le titre et une brève description
 st.title('CalamityCast')
@@ -129,6 +145,58 @@ folium_static(m)
 # Affichez le second graphique à barres
 st.header('Deuxième graphique à barres')
 st.plotly_chart(fig)
+
+# Display the chart using Streamlit
+st.plotly_chart(figwm)
+
+
+
+
+# Load the data
+datas = pd.read_csv('earthquakes_datas.csv')
+
+# Convert the datetime column to pandas datetime format
+datas['time'] = pd.to_datetime(datas['time'])
+
+# Create a world map plot using Plotly Express
+figwm2 = px.scatter_geo(datas, lat='latitude', lon='longitude', color='type',
+                        hover_name='place', projection='natural earth')
+
+# Customize the chart appearance
+figwm2.update_layout(
+    title='Natural Disasters Worldwide',
+    geo=dict(showcountries=True)
+)
+
+# Add an empty placeholder at the bottom to push the content up
+st.empty()
+
+# Create a date range slider to select the desired time period
+col1, col2 = st.columns(2)
+with col1:
+    start_date = st.date_input('Start Date', datas['time'].min().date())
+with col2:
+    end_date = st.date_input('End Date', datas['time'].max().date())
+
+# Convert start_date and end_date to datetime objects
+start_date = pd.to_datetime(start_date).date()
+end_date = pd.to_datetime(end_date).date()
+
+# Filter the data based on the selected date range
+filtered_data = datas[(datas['time'].dt.date >= start_date) & (datas['time'].dt.date <= end_date)]
+
+# Create a world map plot using Plotly Express
+figwm2_filtered = px.scatter_geo(filtered_data, lat='latitude', lon='longitude', color='type',
+                                 hover_name='place', projection='natural earth')
+
+# Customize the chart appearance
+figwm2_filtered.update_layout(
+    title='Natural Disasters Worldwide - {} to {}'.format(start_date, end_date),
+    geo=dict(showcountries=True)
+)
+
+st.plotly_chart(figwm2_filtered)
+
 
 # Pour personnaliser le thème de votre application, vous devez ajouter un fichier .streamlit/config.toml à votre projet avec le contenu suivant :
 """
