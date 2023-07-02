@@ -96,6 +96,28 @@ fig.update_layout(
     yaxis_title='Number of Disasters'
 )
 
+# Lire le fichier csv
+df = pd.read_csv('natural-disasters.csv')
+
+# Convertir l'année en type date
+df['Year'] = pd.to_datetime(df['Year'], format='%Y')
+
+# Ajouter une nouvelle colonne qui est la somme des dégâts économiques de toutes les catastrophes
+df['Total Damage'] = df.iloc[:, 3:].sum(axis=1)
+
+# Grouper par année et sommer
+grouped = df.groupby(df['Year'].dt.year)['Total Damage'].sum()
+
+# Créer un graphique à barres
+plt.figure(figsize=(10, 5))
+grouped.plot(kind='bar')
+plt.title('Augmentation du cout des evenements au fil des ans')
+plt.xlabel('Année')
+plt.ylabel('Cout total des evenements')
+plt.show()
+cost_year = plt.gcf()
+
+
 # Show the chart
 #fig.show()
 
@@ -134,7 +156,7 @@ Solution logiciel d'aide à la décision face aux évènements climatiques extr�
 """)
 
 # Affichez le premier graphique à barres
-st.header('Premier graphique à barres')
+st.header('Increasing of the disasters frequency')
 st.pyplot(number_year)
 
 # Affichez la carte
@@ -143,13 +165,14 @@ m = create_map()
 folium_static(m)
 
 # Affichez le second graphique à barres
-st.header('Deuxième graphique à barres')
+st.header('More details about the disasters')
 st.plotly_chart(fig)
 
 # Display the chart using Streamlit
 st.plotly_chart(figwm)
 
-
+st.header('Increasing of the disasters frequency')
+st.pyplot(cost_year)
 
 
 # Load the data
