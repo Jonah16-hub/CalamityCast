@@ -1,1 +1,4 @@
 matplotlib
+folium
+geopy
+plotly
