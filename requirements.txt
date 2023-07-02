@@ -3,3 +3,4 @@ folium
 geopy
 plotly
 streamlit-folium
+openpyxl
