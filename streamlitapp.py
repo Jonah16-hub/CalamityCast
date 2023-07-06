@@ -126,12 +126,6 @@ cost_year = plt.gcf()
 # Show the chart
 #fig.show()
 
-# Fonction pour créer une carte avec Folium
-def create_map():
-    m = folium.Map(location=[48.85, 2.35], zoom_start=6)
-    # Ajoutez ici d'autres fonctionnalités folium, comme des marqueurs ou des calques de chaleur.
-    return m
-
 # Fonction pour créer des graphiques
 def create_bar_chart(data):
     fig, ax = plt.subplots()
@@ -163,11 +157,6 @@ Solution logiciel d'aide à la décision face aux évènements climatiques extr�
 # Affichez le premier graphique à barres
 st.header('Increasing of the disasters frequency')
 st.pyplot(number_year)
-
-# Affichez la carte
-st.header('Carte Interactive')
-m = create_map()
-folium_static(m)
 
 # Affichez le second graphique à barres
 st.header('More details about the disasters')
@@ -214,7 +203,9 @@ accuracy = accuracy_score(y_test, predictions)
 classification_rep = classification_report(y_test, predictions)
 st.write("The accuracy to predict an earthquake with our model is:", accuracy)
 st.write("Classification Report:")
-st.write(classification_rep)
+st.text_area("",
+             classification_rep,
+             height=400)
 
 ###Making visual display###
 # Create a world map plot using Plotly Express
@@ -230,16 +221,12 @@ figwm2.update_layout(
 # Add an empty placeholder at the bottom to push the content up
 st.empty()
 
-# Create a date range slider to select the desired time period
-col1, col2 = st.columns(2)
-with col1:
-    start_date = st.date_input('Start Date', datas['time'].min().date())
-with col2:
-    end_date = st.date_input('End Date', datas['time'].max().date())
+# Create a range slider to select the desired time period
+date_range = st.slider('Select Date Range', datas['time'].min().date(), datas['time'].max().date(), (datas['time'].min().date(), datas['time'].max().date()))
 
 # Convert start_date and end_date to datetime objects
-start_date = pd.to_datetime(start_date).date()
-end_date = pd.to_datetime(end_date).date()
+start_date = pd.to_datetime(date_range[0]).date()
+end_date = pd.to_datetime(date_range[1]).date()
 
 # Filter the data based on the selected date range
 filtered_data = datas[(datas['time'].dt.date >= start_date) & (datas['time'].dt.date <= end_date)]
