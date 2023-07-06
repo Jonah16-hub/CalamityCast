@@ -10,6 +10,11 @@ import geopy
 from geopy.geocoders import Nominatim
 import plotly.express as px
 import re
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.impute import SimpleImputer
 
 #################################################
 #   Configuration de l'interface de Streamlit   #
@@ -174,13 +179,44 @@ st.plotly_chart(figwm)
 st.header('Increasing of the disasters frequency')
 st.pyplot(cost_year)
 
-
+###Making a prediction model for earthquakes###
 # Load the data
 datas = pd.read_csv('earthquakes_datas.csv')
 
 # Convert the datetime column to pandas datetime format
 datas['time'] = pd.to_datetime(datas['time'])
 
+# Split the data into features (X) and target variable (y)
+X = datas[['latitude', 'longitude', 'depth', 'mag', 'magType', 'nst', 'gap', 'dmin', 'rms', 'horizontalError', 'depthError', 'magError', 'magNst']]
+y = datas['type']
+
+# Convert categorical variables to numerical representation
+label_encoder = LabelEncoder()
+X['magType'] = label_encoder.fit_transform(X['magType'])
+
+imputer = SimpleImputer(strategy='mean')
+X = imputer.fit_transform(X)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a Random Forest Classifier model
+model = RandomForestClassifier()
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Make predictions on the testing set
+predictions = model.predict(X_test)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, predictions)
+classification_rep = classification_report(y_test, predictions)
+st.write("The accuracy to predict an earthquake with our model is:", accuracy)
+st.write("Classification Report:")
+st.write(classification_rep)
+
+###Making visual display###
 # Create a world map plot using Plotly Express
 figwm2 = px.scatter_geo(datas, lat='latitude', lon='longitude', color='type',
                         hover_name='place', projection='natural earth')
