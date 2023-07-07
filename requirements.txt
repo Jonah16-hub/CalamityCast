@@ -1,6 +1,7 @@
+pandas
+scikit-learn
+streamlit
 matplotlib
-folium
-geopy
 plotly
-streamlit-folium
+geopy
 openpyxl

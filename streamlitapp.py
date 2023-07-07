@@ -2,14 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import folium
-from streamlit_folium import folium_static
-import pandas as pd
-import matplotlib.pyplot as plt
 import geopy
 from geopy.geocoders import Nominatim
 import plotly.express as px
 import re
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.impute import SimpleImputer
 
 #################################################
 #   Configuration de l'interface de Streamlit   #
@@ -121,12 +122,6 @@ cost_year = plt.gcf()
 # Show the chart
 #fig.show()
 
-# Fonction pour créer une carte avec Folium
-def create_map():
-    m = folium.Map(location=[48.85, 2.35], zoom_start=6)
-    # Ajoutez ici d'autres fonctionnalités folium, comme des marqueurs ou des calques de chaleur.
-    return m
-
 # Fonction pour créer des graphiques
 def create_bar_chart(data):
     fig, ax = plt.subplots()
@@ -159,11 +154,6 @@ Solution logiciel d'aide à la décision face aux évènements climatiques extr�
 st.header('Increasing of the disasters frequency')
 st.pyplot(number_year)
 
-# Affichez la carte
-st.header('Carte Interactive')
-m = create_map()
-folium_static(m)
-
 # Affichez le second graphique à barres
 st.header('More details about the disasters')
 st.plotly_chart(fig)
@@ -174,13 +164,46 @@ st.plotly_chart(figwm)
 st.header('Increasing of the disasters frequency')
 st.pyplot(cost_year)
 
-
+###Making a prediction model for earthquakes###
 # Load the data
 datas = pd.read_csv('earthquakes_datas.csv')
 
 # Convert the datetime column to pandas datetime format
-datas['time'] = pd.to_datetime(datas['time'])
+datas['time'] = pd.to_datetime(datas['time'], format="%Y-%m-%dT%H:%M:%S.%fZ")
 
+# Split the data into features (X) and target variable (y)
+X = datas[['latitude', 'longitude', 'depth', 'mag', 'magType', 'nst', 'gap', 'dmin', 'rms', 'horizontalError', 'depthError', 'magError', 'magNst']]
+y = datas['type']
+
+# Convert categorical variables to numerical representation
+label_encoder = LabelEncoder()
+X['magType'] = label_encoder.fit_transform(X['magType'])
+
+imputer = SimpleImputer(strategy='mean')
+X = imputer.fit_transform(X)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Create a Random Forest Classifier model
+model = RandomForestClassifier()
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Make predictions on the testing set
+predictions = model.predict(X_test)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, predictions)
+classification_rep = classification_report(y_test, predictions)
+st.write("The accuracy to predict an earthquake with our model is:", accuracy)
+st.write("Classification Report:")
+st.text_area("",
+             classification_rep,
+             height=400)
+
+###Making visual display###
 # Create a world map plot using Plotly Express
 figwm2 = px.scatter_geo(datas, lat='latitude', lon='longitude', color='type',
                         hover_name='place', projection='natural earth')
@@ -194,16 +217,12 @@ figwm2.update_layout(
 # Add an empty placeholder at the bottom to push the content up
 st.empty()
 
-# Create a date range slider to select the desired time period
-col1, col2 = st.columns(2)
-with col1:
-    start_date = st.date_input('Start Date', datas['time'].min().date())
-with col2:
-    end_date = st.date_input('End Date', datas['time'].max().date())
+# Create a range slider to select the desired time period
+date_range = st.slider('Select Date Range', datas['time'].min().date(), datas['time'].max().date(), (datas['time'].min().date(), datas['time'].max().date()))
 
 # Convert start_date and end_date to datetime objects
-start_date = pd.to_datetime(start_date).date()
-end_date = pd.to_datetime(end_date).date()
+start_date = pd.to_datetime(date_range[0]).date()
+end_date = pd.to_datetime(date_range[1]).date()
 
 # Filter the data based on the selected date range
 filtered_data = datas[(datas['time'].dt.date >= start_date) & (datas['time'].dt.date <= end_date)]
